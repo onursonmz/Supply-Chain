@@ -2,3 +2,4 @@ rootProject.name = 'supply-chain-cordapp'
 
 include 'contracts'
 include 'workflows'
+include 'clients'

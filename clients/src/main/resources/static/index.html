@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain CorDapp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>🔗 Supply Chain CorDapp</h1>
+    <span class="node-badge" id="nodeName">Connecting...</span>
+</header>
+
+<nav>
+    <a href="index.html" class="active">Dashboard</a>
+    <a href="products.html">Products</a>
+    <a href="create-product.html">Create</a>
+    <a href="transfer-product.html">Transfer</a>
+</nav>
+
+<main>
+    <div class="card">
+        <h2>Welcome</h2>
+        <p id="welcomeMsg" style="color:#4a5568; margin-bottom:1.5rem;">
+            Loading node information...
+        </p>
+        <div class="dashboard-grid">
+            <a class="dash-card" href="create-product.html">
+                <div class="icon">📦</div>
+                <h3>Create Product</h3>
+                <p>Record a new product on the blockchain</p>
+            </a>
+            <a class="dash-card" href="products.html">
+                <div class="icon">📋</div>
+                <h3>View Products</h3>
+                <p>List all products visible to this node</p>
+            </a>
+            <a class="dash-card" href="transfer-product.html">
+                <div class="icon">🔄</div>
+                <h3>Transfer Product</h3>
+                <p>Transfer ownership to another party</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Network Participants</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Party</th>
+                    <th>Role</th>
+                    <th>RPC Port</th>
+                    <th>Web Port</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Manufacturer</td><td>Creates products</td><td>10006</td><td>8081</td></tr>
+                <tr><td>Distributor</td><td>Receives from Manufacturer</td><td>10009</td><td>8082</td></tr>
+                <tr><td>Retailer</td><td>Final owner</td><td>10012</td><td>8083</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    fetch('/api/node-info')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('nodeName').textContent = data.nodeName;
+            document.getElementById('welcomeMsg').textContent =
+                'Connected to the ' + data.nodeName + ' node. Use the menu above to manage products.';
+        })
+        .catch(() => {
+            document.getElementById('nodeName').textContent = 'Disconnected';
+            document.getElementById('welcomeMsg').textContent =
+                'Could not connect to the Corda node. Make sure the node is running.';
+        });
+</script>
+
+</body>
+</html>

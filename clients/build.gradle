@@ -1,0 +1,32 @@
+plugins {
+    id 'org.springframework.boot' version '2.7.18'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'java'
+}
+
+// Do NOT apply the cordapp plugin here — this is a standard Spring Boot app
+dependencies {
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Corda RPC — needed to communicate with the Corda node
+    implementation "$corda_core_release_group:corda-core:$corda_core_release_version"
+    implementation "$corda_release_group:corda-rpc:$corda_release_version"
+
+    // Kotlin stdlib is required by corda-core at runtime
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    // Our own CorDapp modules — needed for ProductState and Flow class references
+    implementation project(':contracts')
+    implementation project(':workflows')
+}
+
+// Spring Boot 2.7.x bootJar produces a runnable fat jar
+bootJar {
+    archiveFileName = 'supply-chain-client.jar'
+}
+
+// Disable the regular jar task to avoid confusion
+jar {
+    enabled = false
+}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfer Product — Supply Chain</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>🔗 Supply Chain CorDapp</h1>
+    <span class="node-badge" id="nodeName">Loading...</span>
+</header>
+
+<nav>
+    <a href="index.html">Dashboard</a>
+    <a href="products.html">Products</a>
+    <a href="create-product.html">Create</a>
+    <a href="transfer-product.html" class="active">Transfer</a>
+</nav>
+
+<main>
+    <div class="card">
+        <h2>Transfer Product Ownership</h2>
+
+        <div class="alert alert-info" style="margin-bottom:1.25rem;">
+            💡 Go to <a href="products.html">Products</a> to copy a product's Linear ID first.
+        </div>
+
+        <div id="message"></div>
+
+        <form id="transferForm" onsubmit="submitTransfer(event)">
+            <div class="form-group">
+                <label for="linearId">Product Linear ID</label>
+                <input type="text" id="linearId"
+                       placeholder="e.g. 12345678-abcd-1234-abcd-123456789abc" required>
+            </div>
+            <div class="form-group">
+                <label for="newOwner">Transfer To</label>
+                <select id="newOwner" required>
+                    <option value="">— Select new owner —</option>
+                    <option value="Manufacturer">Manufacturer</option>
+                    <option value="Distributor">Distributor</option>
+                    <option value="Retailer">Retailer</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                🔄 Transfer Ownership
+            </button>
+        </form>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+        <h2>✅ Transfer Successful</h2>
+        <table>
+            <tbody id="resultBody"></tbody>
+        </table>
+        <div style="margin-top:1rem; display:flex; gap:0.75rem;">
+            <button class="btn btn-primary" onclick="resetForm()">Transfer Another</button>
+            <a href="products.html" class="btn btn-primary" style="text-decoration:none;">View Products</a>
+        </div>
+    </div>
+</main>
+
+<script>
+    fetch('/api/node-info')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('nodeName').textContent = data.nodeName;
+            // Pre-fill the URL param if provided (?linearId=xxx)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('linearId')) {
+                document.getElementById('linearId').value = params.get('linearId');
+            }
+        });
+
+    function submitTransfer(event) {
+        event.preventDefault();
+
+        const linearId = document.getElementById('linearId').value.trim();
+        const newOwner = document.getElementById('newOwner').value;
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('message');
+
+        btn.textContent = 'Processing...';
+        btn.disabled = true;
+        msg.innerHTML = '';
+
+        fetch('/api/products/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linearId, newOwner })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                msg.innerHTML = '<div class="alert alert-error">Error: ' + escHtml(data.error) + '</div>';
+                return;
+            }
+            document.getElementById('transferForm').style.display = 'none';
+            const resultCard = document.getElementById('resultCard');
+            resultCard.style.display = 'block';
+            document.getElementById('resultBody').innerHTML = `
+                <tr><td><strong>Product Name</strong></td><td>${escHtml(data.productName)}</td></tr>
+                <tr><td><strong>Serial Number</strong></td><td>${escHtml(data.serialNumber)}</td></tr>
+                <tr><td><strong>New Owner</strong></td><td>${escHtml(data.owner)}</td></tr>
+                <tr><td><strong>Status</strong></td>
+                    <td><span class="badge badge-transferred">${escHtml(data.status)}</span></td></tr>
+                <tr><td><strong>Linear ID</strong></td>
+                    <td class="id-cell">${escHtml(data.linearId)}</td></tr>
+            `;
+        })
+        .catch(err => {
+            msg.innerHTML = '<div class="alert alert-error">Request failed: ' + err.message + '</div>';
+        })
+        .finally(() => {
+            btn.textContent = '🔄 Transfer Ownership';
+            btn.disabled = false;
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('transferForm').style.display = 'block';
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('linearId').value = '';
+        document.getElementById('newOwner').value = '';
+        document.getElementById('message').innerHTML = '';
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+</script>
+
+</body>
+</html>

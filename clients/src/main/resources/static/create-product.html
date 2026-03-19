@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Product — Supply Chain</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>🔗 Supply Chain CorDapp</h1>
+    <span class="node-badge" id="nodeName">Loading...</span>
+</header>
+
+<nav>
+    <a href="index.html">Dashboard</a>
+    <a href="products.html">Products</a>
+    <a href="create-product.html" class="active">Create</a>
+    <a href="transfer-product.html">Transfer</a>
+</nav>
+
+<main>
+    <div class="card">
+        <h2>Create New Product</h2>
+
+        <div id="message"></div>
+
+        <form id="createForm" onsubmit="submitForm(event)">
+            <div class="form-group">
+                <label for="productName">Product Name</label>
+                <input type="text" id="productName" placeholder="e.g. Laptop Model X" required>
+            </div>
+            <div class="form-group">
+                <label for="serialNumber">Serial Number</label>
+                <input type="text" id="serialNumber" placeholder="e.g. SN-2024-001" required>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                📦 Create Product on Blockchain
+            </button>
+        </form>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+        <h2>✅ Product Created</h2>
+        <table>
+            <tbody id="resultBody"></tbody>
+        </table>
+        <div style="margin-top:1rem; display:flex; gap:0.75rem;">
+            <button class="btn btn-primary" onclick="resetForm()">Create Another</button>
+            <a href="products.html" class="btn btn-primary" style="text-decoration:none;">View All Products</a>
+        </div>
+    </div>
+</main>
+
+<script>
+    fetch('/api/node-info')
+        .then(r => r.json())
+        .then(data => { document.getElementById('nodeName').textContent = data.nodeName; });
+
+    function submitForm(event) {
+        event.preventDefault();
+
+        const productName  = document.getElementById('productName').value.trim();
+        const serialNumber = document.getElementById('serialNumber').value.trim();
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('message');
+
+        btn.textContent = 'Processing...';
+        btn.disabled = true;
+        msg.innerHTML = '';
+
+        fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productName, serialNumber })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                msg.innerHTML = '<div class="alert alert-error">Error: ' + escHtml(data.error) + '</div>';
+                return;
+            }
+            // Show result
+            document.getElementById('createForm').style.display = 'none';
+            const resultCard = document.getElementById('resultCard');
+            resultCard.style.display = 'block';
+            document.getElementById('resultBody').innerHTML = `
+                <tr><td><strong>Product Name</strong></td><td>${escHtml(data.productName)}</td></tr>
+                <tr><td><strong>Serial Number</strong></td><td>${escHtml(data.serialNumber)}</td></tr>
+                <tr><td><strong>Owner</strong></td><td>${escHtml(data.owner)}</td></tr>
+                <tr><td><strong>Status</strong></td>
+                    <td><span class="badge badge-created">${escHtml(data.status)}</span></td></tr>
+                <tr><td><strong>Linear ID</strong></td>
+                    <td class="id-cell">${escHtml(data.linearId)}
+                        <button class="copy-btn" onclick="copyId('${escHtml(data.linearId)}')">Copy</button>
+                    </td></tr>
+            `;
+        })
+        .catch(err => {
+            msg.innerHTML = '<div class="alert alert-error">Request failed: ' + err.message + '</div>';
+        })
+        .finally(() => {
+            btn.textContent = '📦 Create Product on Blockchain';
+            btn.disabled = false;
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('createForm').style.display = 'block';
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('productName').value = '';
+        document.getElementById('serialNumber').value = '';
+        document.getElementById('message').innerHTML = '';
+    }
+
+    function copyId(id) {
+        navigator.clipboard.writeText(id);
+        alert('Copied: ' + id);
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+</script>
+
+</body>
+</html>
