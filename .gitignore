@@ -1,0 +1,24 @@
+# Build outputs
+build/
+out/
+*.class
+
+# Gradle
+.gradle/
+local.properties
+
+# Node runtime files (deploy ile yeniden oluşturulur)
+build/nodes/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Logs
+*.log
+
+# Kotlin
+kotlin-js-store/

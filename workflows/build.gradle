@@ -1,0 +1,33 @@
+apply plugin: 'net.corda.plugins.cordapp'
+apply plugin: 'net.corda.plugins.quasar-utils'
+
+cordapp {
+    targetPlatformVersion corda_platform_version.toInteger()
+    minimumPlatformVersion corda_platform_version.toInteger()
+    workflow {
+        name "Supply Chain Workflows"
+        vendor "SupplyChainCorp"
+        licence "Apache License, Version 2.0"
+        versionId 1
+    }
+}
+
+dependencies {
+    cordaProvided "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    cordaProvided 'com.google.guava:guava:23.0'
+    cordaProvided "$corda_core_release_group:corda-core:$corda_core_release_version"
+
+    cordapp project(':contracts')
+}
+
+quasar {
+    excludePackages.addAll(
+            "antlr**", "javax**", "com.codahale**", "com.fasterxml.**",
+            "com.github.benmanes.caffeine.**", "com.google.**", "com.lmax.**",
+            "com.zaxxer.**", "net.bytebuddy**", "io.github.classgraph**",
+            "io.netty*", "liquibase**", "net.i2p.crypto.**",
+            "nonapi.io.github.classgraph.**", "org.apiguardian.**",
+            "org.bouncycastle**", "org.codehaus.**", "org.h2**",
+            "org.hibernate**", "org.jboss.**", "org.objenesis**",
+            "org.w3c.**", "org.xml**", "org.yaml**", "kotlin**", "rx**")
+}

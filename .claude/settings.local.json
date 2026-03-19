@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gradle --version)",
+      "Bash(gradle wrapper:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew deployNodes)"
+    ]
+  }
+}
