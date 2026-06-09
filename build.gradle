@@ -79,6 +79,10 @@ dependencies {
 }
 
 task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
+    // Nodes are deployed to D: drive to avoid C: disk-full blocking in Artemis RPC broker.
+    // Artemis monitors the disk of its working directory; D: has sufficient free space.
+    directory "D:/supply-chain-nodes"
+
     nodeDefaults {
         projectCordapp {
             deploy = false
@@ -119,7 +123,7 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
     }
 
     node {
-        name "O=Retailer,L=Berlin,C=DE"
+        name "O=Pharmacy,L=Istanbul,C=TR"
         p2pPort 10011
         rpcSettings {
             address("localhost:10012")

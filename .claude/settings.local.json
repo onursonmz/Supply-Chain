@@ -4,7 +4,14 @@
       "Bash(gradle --version)",
       "Bash(gradle wrapper:*)",
       "Bash(./gradlew clean:*)",
-      "Bash(./gradlew deployNodes)"
+      "Bash(./gradlew deployNodes)",
+      "Bash(dir D:\\\\supply-chain-nodes\\\\Manufacturer\\\\network-parameters)",
+      "Bash(npm run *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ASUS\\\\Desktop\\\\onur\\\\Supply Chain\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(gradlew.bat :contracts:compileJava)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\ASUS\\\\Desktop\\\\onur\\\\Supply Chain\"; $env:JAVA_TOOL_OPTIONS=\"-Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8\"; .\\\\gradlew.bat deployNodes 2>&1 | Select-Object -Last 40)",
+      "Bash(git add *)"
     ]
   }
 }

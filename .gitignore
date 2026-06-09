@@ -22,3 +22,15 @@ build/nodes/
 
 # Kotlin
 kotlin-js-store/
+
+# H2 file-based database (runtime data, not source)
+supply-chain-db/
+
+# Claude AI internal worktrees
+.claude/worktrees/
+
+# Compiled class files in clients/bin
+clients/bin/
+
+# Frontend dependencies
+frontend/node_modules/

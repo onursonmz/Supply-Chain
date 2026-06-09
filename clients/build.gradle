@@ -8,15 +8,19 @@ plugins {
 dependencies {
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    // Corda RPC — needed to communicate with the Corda node
+    // H2 in-memory database for organizations, users, and batch metadata
+    runtimeOnly 'com.h2database:h2'
+
+    // Corda RPC
     implementation "$corda_core_release_group:corda-core:$corda_core_release_version"
     implementation "$corda_release_group:corda-rpc:$corda_release_version"
 
     // Kotlin stdlib is required by corda-core at runtime
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    // Our own CorDapp modules — needed for ProductState and Flow class references
+    // Our own CorDapp modules
     implementation project(':contracts')
     implementation project(':workflows')
 }

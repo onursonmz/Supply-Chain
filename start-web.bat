@@ -5,7 +5,7 @@ REM
 REM  Usage:
 REM    start-web.bat manufacturer   → port 8081
 REM    start-web.bat distributor    → port 8082
-REM    start-web.bat retailer       → port 8083
+REM    start-web.bat pharmacy       → port 8083
 REM
 REM  Make sure the Corda nodes are running first (start-nodes.bat)
 REM ============================================================
@@ -13,7 +13,7 @@ REM ============================================================
 set PROFILE=%1
 
 if "%PROFILE%"=="" (
-    echo Usage: start-web.bat [manufacturer^|distributor^|retailer]
+    echo Usage: start-web.bat [manufacturer^|distributor^|pharmacy]
     echo.
     echo Example: start-web.bat manufacturer
     exit /b 1
@@ -26,5 +26,13 @@ if not exist "%JAR%" (
     exit /b 1
 )
 
+if "%JAVA_HOME%"=="" (
+    echo ERROR: JAVA_HOME is not set. Please set JAVA_HOME to JDK 17.
+    exit /b 1
+)
+
+set JAVA_EXE=%JAVA_HOME%\bin\java.exe
+
+echo [INFO] Using Java: %JAVA_EXE%
 echo [INFO] Starting Supply Chain Web App for: %PROFILE%
-java "-Duser.language=en" "-Duser.country=US" "-Dfile.encoding=UTF-8" "-Dspring.profiles.active=%PROFILE%" -jar %JAR%
+"%JAVA_EXE%" "-Duser.language=en" "-Duser.country=US" "-Dfile.encoding=UTF-8" "-Dspring.profiles.active=%PROFILE%" -jar %JAR%
