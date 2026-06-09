@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import StatCard from '../components/StatCard'
 import { medicineService } from '../services/medicineService'
 import { transferRequestService } from '../services/transferRequestService'
@@ -28,12 +27,6 @@ export default function DistributorDashboardPage() {
     .filter(t => t.status === 'TRANSFERRED')
     .slice(0, 5)
 
-  const chartData = [
-    { name: 'Gelen',      value: data?.incomingTransferCount || 0, fill: '#27ae60' },
-    { name: 'Giden',      value: data?.outgoingTransferCount || 0, fill: '#2980b9' },
-    { name: 'Bekleyen',   value: data?.pendingTransferCount  || 0, fill: '#f39c12' },
-  ]
-
   return (
     <div>
       <div className="page-header">
@@ -54,22 +47,6 @@ export default function DistributorDashboardPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Transfer Akışı</div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 13 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
         <div className="card">
           <div className="card-header">
             <div className="card-title">Hızlı Erişim</div>

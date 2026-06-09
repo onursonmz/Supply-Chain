@@ -23,6 +23,13 @@ public class ColdChainRecordResponse {
     private String submittedBy;
     private String submittedAt;
     private String notes;
+    private String batchNumber;
+    private String medicineName;
+    private String fromOrganizationId;
+    private String fromOrganizationName;
+    private String toOrganizationId;
+    private String toOrganizationName;
+    private int    transferQuantity;
 
     public static ColdChainRecordResponse from(ColdChainRecord r) {
         ColdChainRecordResponse d = new ColdChainRecordResponse();
@@ -42,6 +49,13 @@ public class ColdChainRecordResponse {
         d.submittedBy         = r.getSubmittedBy();
         d.submittedAt         = r.getSubmittedAt()         != null ? r.getSubmittedAt().format(FMT)         : null;
         d.notes               = r.getNotes();
+        d.batchNumber         = r.getBatchNumber();
+        d.medicineName        = r.getMedicineName();
+        d.fromOrganizationId  = r.getFromOrganizationId();
+        d.fromOrganizationName= r.getFromOrganizationName();
+        d.toOrganizationId    = r.getToOrganizationId();
+        d.toOrganizationName  = r.getToOrganizationName();
+        d.transferQuantity    = r.getTransferQuantity();
         return d;
     }
 
@@ -78,4 +92,19 @@ public class ColdChainRecordResponse {
     public void setSubmittedBy(String v)        { this.submittedBy = v; }
     public void setSubmittedAt(String v)        { this.submittedAt = v; }
     public void setNotes(String v)              { this.notes = v; }
+
+    public String getBatchNumber()              { return batchNumber; }
+    public void   setBatchNumber(String v)      { this.batchNumber = v; }
+    public String getMedicineName()             { return medicineName; }
+    public void   setMedicineName(String v)     { this.medicineName = v; }
+    public String getFromOrganizationId()       { return fromOrganizationId; }
+    public void   setFromOrganizationId(String v){ this.fromOrganizationId = v; }
+    public String getFromOrganizationName()     { return fromOrganizationName; }
+    public void   setFromOrganizationName(String v){ this.fromOrganizationName = v; }
+    public String getToOrganizationId()         { return toOrganizationId; }
+    public void   setToOrganizationId(String v) { this.toOrganizationId = v; }
+    public String getToOrganizationName()       { return toOrganizationName; }
+    public void   setToOrganizationName(String v){ this.toOrganizationName = v; }
+    public int    getTransferQuantity()         { return transferQuantity; }
+    public void   setTransferQuantity(int v)    { this.transferQuantity = v; }
 }

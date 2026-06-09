@@ -253,4 +253,35 @@ public class TransferRequestService {
     public long countOutgoingTransferred(String orgId) {
         return requestRepo.countByFromOrganizationIdAndStatus(orgId, "TRANSFERRED");
     }
+
+    /**
+     * Returns a violated batch to the original sender.
+     * Used when cold chain violation is detected and the receiver wants to send back.
+     */
+    @Transactional
+    public TransferRequestResponse returnToSender(String originalTransferRequestId, String performedBy) {
+        TransferRequest original = requestRepo.findById(originalTransferRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Orijinal transfer bulunamadı: " + originalTransferRequestId));
+
+        if (!"TRANSFERRED".equals(original.getStatus()))
+            throw new IllegalStateException("Yalnızca tamamlanmış transferler iade edilebilir.");
+
+        log.info("[RETURN TO SENDER] originalRef={} batch={} returnFrom={} returnTo={}",
+                original.getTransferReferenceNo(), original.getBatchNumber(),
+                original.getToOrganizationId(), original.getFromOrganizationId());
+
+        // Build return transfer DTO: toOrg sends back to fromOrg
+        CreateTransferRequestDto dto = new CreateTransferRequestDto();
+        dto.setBatchNumber(original.getBatchNumber());
+        dto.setMedicineName(original.getMedicineName());
+        dto.setGtin(original.getGtin());
+        dto.setQuantity(original.getQuantity());
+        dto.setTargetOrganizationId(original.getFromOrganizationId());
+        dto.setNotes("İADE — Soğuk zincir ihlali. Orijinal Ref: " + original.getTransferReferenceNo());
+
+        // The current holder is the toOrg of the original transfer
+        TransferRequestResponse returnReq = createRequest(
+                dto, original.getToOrganizationId(), original.getToOrganizationName(), performedBy);
+        return dispatchRequest(returnReq.getTransferRequestId(), performedBy);
+    }
 }

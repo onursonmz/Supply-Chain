@@ -4,6 +4,7 @@ import StatCard from '../components/StatCard'
 import { medicineService } from '../services/medicineService'
 import { transferRequestService } from '../services/transferRequestService'
 
+
 export default function PharmacyDashboardPage() {
   const [data, setData]         = useState(null)
   const [incoming, setIncoming] = useState([])

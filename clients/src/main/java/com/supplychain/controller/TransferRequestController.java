@@ -125,6 +125,21 @@ public class TransferRequestController {
         }
     }
 
+    /** Returns a violated batch to the original sender (reverse transfer). */
+    @PostMapping("/return")
+    public ResponseEntity<?> returnToSender(@RequestBody Map<String, String> body, HttpSession session) {
+        if (!isAuthenticated(session)) return unauthorized();
+        String originalId = body.get("transferRequestId");
+        if (isBlank(originalId)) return badRequest("transferRequestId zorunludur.");
+        String user = (String) session.getAttribute("username");
+        try {
+            TransferRequestResponse result = transferRequestService.returnToSender(originalId, user);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/pending-acceptance")
     public ResponseEntity<?> getPendingAcceptance(HttpSession session) {
         if (!isAuthenticated(session)) return unauthorized();

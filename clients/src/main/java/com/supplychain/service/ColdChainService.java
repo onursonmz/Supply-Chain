@@ -56,6 +56,14 @@ public class ColdChainService {
         rec.setNotes(req.getNotes());
         rec.setSubmittedBy(submittedBy);
         rec.setSubmittedAt(LocalDateTime.now());
+        // Copy transfer context so cold chain records are self-contained
+        rec.setBatchNumber(tr.getBatchNumber());
+        rec.setMedicineName(tr.getMedicineName());
+        rec.setFromOrganizationId(tr.getFromOrganizationId());
+        rec.setFromOrganizationName(tr.getFromOrganizationName());
+        rec.setToOrganizationId(tr.getToOrganizationId());
+        rec.setToOrganizationName(tr.getToOrganizationName());
+        rec.setTransferQuantity(tr.getQuantity());
 
         if (req.getTransportStartTime() != null && !req.getTransportStartTime().isBlank()) {
             try { rec.setTransportStartTime(LocalDateTime.parse(req.getTransportStartTime(), PARSE_FMT)); } catch (Exception ignored) {}

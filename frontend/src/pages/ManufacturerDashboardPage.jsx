@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import StatCard from '../components/StatCard'
 import MedicineTable from '../components/MedicineTable'
 import { medicineService } from '../services/medicineService'
@@ -19,13 +18,6 @@ export default function ManufacturerDashboardPage() {
 
   if (loading) return <div className="spinner" />
 
-  const chartData = [
-    { name: 'Üretildi',   value: data?.createdCount        || 0, fill: '#2980b9' },
-    { name: 'Dağıtımda',  value: data?.inDistributionCount || 0, fill: '#f39c12' },
-    { name: 'Eczanede',   value: data?.atPharmacyCount     || 0, fill: '#8e44ad' },
-    { name: 'Teslim',     value: data?.dispensedCount      || 0, fill: '#27ae60' },
-  ]
-
   return (
     <div>
       <div className="page-header">
@@ -40,24 +32,6 @@ export default function ManufacturerDashboardPage() {
         {(data?.pendingOrderCount || 0) > 0 && (
           <StatCard icon="🛒" value={data.pendingOrderCount}          label="Bekleyen Sipariş"     color="#8e44ad" />
         )}
-      </div>
-
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div className="card-header">
-          <div className="card-title">İlaç Durum Dağılımı</div>
-        </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <XAxis dataKey="name" tick={{ fontSize: 13 }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
       </div>
 
       <div className="quick-actions">

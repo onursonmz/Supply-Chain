@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { coldChainService } from '../services/coldChainService'
 import { medicineService } from '../services/medicineService'
-import { api } from '../services/api'
+import { transferRequestService } from '../services/transferRequestService'
 import { toast } from '../components/Toast'
+
+function getUser() {
+  try { return JSON.parse(sessionStorage.getItem('pharma_user') || 'null') } catch { return null }
+}
 
 function StatusBadge({ status }) {
   const isV = status === 'VIOLATED'
@@ -30,46 +34,66 @@ function TempCell({ value, min, max }) {
 }
 
 export default function ColdChainMonitorPage() {
-  const [records, setRecords]     = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [filter, setFilter]       = useState('VIOLATED')
-  const [recalling, setRecalling] = useState(null)
-  const [recallModal, setModal]   = useState(null)
+  const user = getUser()
+  const role = user?.role || ''
+  const isRegulatorOrAdmin = role === 'REGULATOR_USER' || role === 'ADMIN'
+  const isHolder = role === 'DISTRIBUTOR_USER' || role === 'PHARMACY_USER' || role === 'ADMIN'
+
+  const [records, setRecords]   = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
+  const [filter, setFilter]     = useState('VIOLATED')
+  const [actionId, setActionId] = useState(null)
 
   function load() {
     setLoading(true); setError('')
-    const req = filter === 'ALL' ? coldChainService.getAll()
+    const req = filter === 'ALL'      ? coldChainService.getAll()
               : filter === 'VIOLATED' ? coldChainService.getViolations()
               : coldChainService.getAll().then(all => all.filter(r => r.coldChainStatus === 'VALID'))
-    req
-      .then(setRecords)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
+    req.then(setRecords)
+       .catch(e => setError(e.message))
+       .finally(() => setLoading(false))
   }
   useEffect(load, [filter])
 
   async function handleRecall(record) {
+    const batchNo = record.batchNumber
+    if (!batchNo) {
+      toast('Parti numarası bulunamadı. Soğuk zincir kaydı eksik bilgi içeriyor.', 'error')
+      return
+    }
     if (!window.confirm(
-      `Parti "${record.batchNumber || record.transferReferenceNo}" için geri çağırma başlatılsın mı?\n\nBu işlem geri alınamaz.`
+      `"${batchNo}" partisi için tüm ilaçlar RECALLED olarak işaretlensin mi?\n\nBu işlem geri alınamaz.`
     )) return
 
-    setRecalling(record.recordId); setError('')
+    setActionId(record.recordId)
     try {
-      // Recall all medicines in the batch with this reference no
-      const batchRef = record.batchNumber || record.medicineName
-      if (batchRef) {
-        await medicineService.recallBatch(batchRef)
-        toast(`Parti "${batchRef}" için geri çağırma başlatıldı. İlaçlar RECALLED olarak işaretlendi.`, 'success')
-        load()
-      } else {
-        toast('Parti numarası bulunamadı, geri çağırma yapılamadı.', 'error')
-      }
+      await medicineService.recallBatch(batchNo)
+      toast(`✓ "${batchNo}" partisi toplandı. İlaçlar RECALLED olarak işaretlendi.`, 'success')
+      load()
     } catch (e) {
       toast('Geri çağırma başarısız: ' + e.message, 'error')
-      setError(e.message)
     } finally {
-      setRecalling(null)
+      setActionId(null)
+    }
+  }
+
+  async function handleReturn(record) {
+    const batchNo = record.batchNumber
+    const fromOrg = record.fromOrganizationName || 'gönderici'
+    if (!window.confirm(
+      `"${batchNo}" partisi (${record.transferQuantity} adet) "${fromOrg}"'e iade edilsin mi?\n\nStoktan düşülür, gönderici envanterine eklenir.`
+    )) return
+
+    setActionId(record.recordId)
+    try {
+      await transferRequestService.returnToSender(record.transferRequestId)
+      toast(`✓ "${batchNo}" partisi "${fromOrg}"'e iade edildi.`, 'success')
+      load()
+    } catch (e) {
+      toast('İade başarısız: ' + e.message, 'error')
+    } finally {
+      setActionId(null)
     }
   }
 
@@ -80,7 +104,7 @@ export default function ColdChainMonitorPage() {
     <div>
       <div className="page-header">
         <h1>Soğuk Zincir İzleme</h1>
-        <p>Transfer sırasındaki sıcaklık kayıtları — ihlaller ve geri çağırma</p>
+        <p>Transfer sırasındaki sıcaklık kayıtları — ihlaller, geri çağırma ve iade</p>
       </div>
 
       {/* Summary cards */}
@@ -106,20 +130,15 @@ export default function ColdChainMonitorPage() {
           cursor: 'pointer', background: filter === 'ALL' ? 'var(--bg-secondary)' : undefined
         }} onClick={() => setFilter('ALL')}>
           <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#2980b9' }}>{records.length}</div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Toplam Kayıt</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Toplam</div>
         </div>
         <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'center' }} onClick={load}>↻ Yenile</button>
       </div>
 
-      {/* Alert for violations */}
-      {filter === 'VIOLATED' && violatedCount > 0 && (
-        <div className="alert alert-error" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '1.2rem' }}>⚠</span>
-          <div>
-            <strong>{violatedCount} soğuk zincir ihlali tespit edildi.</strong>
-            {' '}Bu ilaçlar sıcaklık limitlerini aşmış taşımada bulundu.
-            Güvenilirliklerini değerlendirin ve gerekirse topla işlemi başlatın.
-          </div>
+      {violatedCount > 0 && filter === 'VIOLATED' && (
+        <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
+          <strong>⚠ {violatedCount} soğuk zincir ihlali tespit edildi.</strong>
+          {' '}İhlalli ilaçlar için topla (RECALLED) veya iade (gönderici envanterine iade et) işlemi yapılabilir.
         </div>
       )}
 
@@ -149,7 +168,7 @@ export default function ColdChainMonitorPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  {['Transfer Ref', 'Min (°C)', 'Max (°C)', 'Ort (°C)', 'İzin Min', 'İzin Max', 'Araç', 'Durum', 'Tarih', 'İşlem'].map(h => (
+                  {['İlaç / Parti', 'Min', 'Max', 'Ort', 'İzin Min-Max', 'Gönderen → Alıcı', 'Araç', 'Durum', 'Tarih', 'İşlem'].map(h => (
                     <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.76rem', fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
@@ -161,7 +180,10 @@ export default function ColdChainMonitorPage() {
                     background: r.coldChainStatus === 'VIOLATED' ? '#fff5f5' : 'transparent'
                   }}>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
-                      <div style={{ fontFamily: 'monospace', fontSize: '0.77rem', color: 'var(--text-muted)' }}>{r.transferReferenceNo}</div>
+                      <div style={{ fontWeight: 600 }}>{r.medicineName || '—'}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {r.batchNumber || r.transferReferenceNo}
+                      </div>
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       <TempCell value={r.minTemperature} min={r.minAllowedTemp} max={r.maxAllowedTemp} />
@@ -170,8 +192,14 @@ export default function ColdChainMonitorPage() {
                       <TempCell value={r.maxTemperature} min={r.minAllowedTemp} max={r.maxAllowedTemp} />
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600 }}>{r.avgTemperature}°C</td>
-                    <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-muted)' }}>{r.minAllowedTemp}°C</td>
-                    <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-muted)' }}>{r.maxAllowedTemp}°C</td>
+                    <td style={{ padding: '0.6rem 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {r.minAllowedTemp}°C – {r.maxAllowedTemp}°C
+                    </td>
+                    <td style={{ padding: '0.6rem 0.75rem', fontSize: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{r.fromOrganizationName || '—'}</span>
+                      {' → '}
+                      <span style={{ fontWeight: 600 }}>{r.toOrganizationName || '—'}</span>
+                    </td>
                     <td style={{ padding: '0.6rem 0.75rem', fontSize: '0.8rem' }}>{r.vehicleId || '—'}</td>
                     <td style={{ padding: '0.6rem 0.75rem' }}><StatusBadge status={r.coldChainStatus} /></td>
                     <td style={{ padding: '0.6rem 0.75rem', fontSize: '0.77rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -179,14 +207,30 @@ export default function ColdChainMonitorPage() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {r.coldChainStatus === 'VIOLATED' && (
-                        <button
-                          className="btn btn-sm"
-                          style={{ background: '#e74c3c', color: '#fff', border: 'none', fontSize: '0.78rem', fontWeight: 700 }}
-                          disabled={recalling === r.recordId}
-                          onClick={() => handleRecall(r)}
-                        >
-                          {recalling === r.recordId ? '…' : '🗑 Topla'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexDirection: 'column' }}>
+                          {/* Geri gönder — holder (distributor/pharmacy) */}
+                          {(isHolder || isRegulatorOrAdmin) && r.transferRequestId && (
+                            <button
+                              className="btn btn-sm"
+                              style={{ background: '#f39c12', color: '#fff', border: 'none', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                              disabled={actionId === r.recordId}
+                              onClick={() => handleReturn(r)}
+                            >
+                              {actionId === r.recordId ? '…' : '↩ Geri Gönder'}
+                            </button>
+                          )}
+                          {/* Topla — regulator/admin */}
+                          {isRegulatorOrAdmin && (
+                            <button
+                              className="btn btn-sm"
+                              style={{ background: '#e74c3c', color: '#fff', border: 'none', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                              disabled={actionId === r.recordId}
+                              onClick={() => handleRecall(r)}
+                            >
+                              {actionId === r.recordId ? '…' : '🗑 Topla'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -197,19 +241,12 @@ export default function ColdChainMonitorPage() {
         )}
       </div>
 
-      {/* How it works info */}
-      <div className="card" style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#f8fafc' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.88rem' }}>Soğuk Zincir Akışı</div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span>Transfer oluştur</span>
-          <span>→</span>
-          <span>Soğuk zincir verisi gir</span>
-          <span>→</span>
-          <span style={{ color: '#991b1b' }}>İhlal tespit edilirse batch işaretlenir</span>
-          <span>→</span>
-          <span>Denetleyici "Topla" butonuyla geri çağırır</span>
-          <span>→</span>
-          <span>İlaçlar RECALLED olarak işaretlenir</span>
+      {/* Legend */}
+      <div className="card" style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#f8fafc', fontSize: '0.82rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>İşlemler Hakkında</div>
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', color: 'var(--text-muted)' }}>
+          <span><strong style={{ color: '#f39c12' }}>↩ Geri Gönder</strong> — İlaçları orijinal göndericiye iade eder. Stoktan düşer, gönderici envanterine eklenir.</span>
+          <span><strong style={{ color: '#e74c3c' }}>🗑 Topla</strong> — İlaçları RECALLED olarak işaretler. Blockchain'de kalıcı kayıt oluşur. (Sadece Denetleyici/Admin)</span>
         </div>
       </div>
     </div>

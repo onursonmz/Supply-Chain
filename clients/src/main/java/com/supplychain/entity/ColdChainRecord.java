@@ -58,6 +58,28 @@ public class ColdChainRecord {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    // Transfer context — copied from TransferRequest for standalone queries
+    @Column(name = "batch_number")
+    private String batchNumber;
+
+    @Column(name = "medicine_name")
+    private String medicineName;
+
+    @Column(name = "from_organization_id")
+    private String fromOrganizationId;
+
+    @Column(name = "from_organization_name")
+    private String fromOrganizationName;
+
+    @Column(name = "to_organization_id")
+    private String toOrganizationId;
+
+    @Column(name = "to_organization_name")
+    private String toOrganizationName;
+
+    @Column(name = "transfer_quantity")
+    private int transferQuantity;
+
     public String getRecordId()                       { return recordId; }
     public void   setRecordId(String v)               { this.recordId = v; }
     public String getTransferRequestId()              { return transferRequestId; }
@@ -90,4 +112,19 @@ public class ColdChainRecord {
     public void   setSubmittedAt(LocalDateTime v)     { this.submittedAt = v; }
     public String getNotes()                          { return notes; }
     public void   setNotes(String v)                  { this.notes = v; }
+
+    public String getBatchNumber()                    { return batchNumber; }
+    public void   setBatchNumber(String v)            { this.batchNumber = v; }
+    public String getMedicineName()                   { return medicineName; }
+    public void   setMedicineName(String v)           { this.medicineName = v; }
+    public String getFromOrganizationId()             { return fromOrganizationId; }
+    public void   setFromOrganizationId(String v)     { this.fromOrganizationId = v; }
+    public String getFromOrganizationName()           { return fromOrganizationName; }
+    public void   setFromOrganizationName(String v)   { this.fromOrganizationName = v; }
+    public String getToOrganizationId()               { return toOrganizationId; }
+    public void   setToOrganizationId(String v)       { this.toOrganizationId = v; }
+    public String getToOrganizationName()             { return toOrganizationName; }
+    public void   setToOrganizationName(String v)     { this.toOrganizationName = v; }
+    public int    getTransferQuantity()               { return transferQuantity; }
+    public void   setTransferQuantity(int v)          { this.transferQuantity = v; }
 }

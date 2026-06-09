@@ -5,6 +5,8 @@ const BASE = '/api/transfer-requests'
 export const transferRequestService = {
   // Direct transfer: creates + dispatches in one step (recommended)
   transferDirect:      (data)           => api.post(`${BASE}/direct`, data),
+  // Return to sender: reverse transfer for cold chain violations
+  returnToSender:      (transferRequestId) => api.post(`${BASE}/return`, { transferRequestId }),
   // Legacy two-step flow (kept for OutgoingTransfersPage)
   create:              (data)           => api.post(BASE, data),
   dispatch:            (id)             => api.post(`${BASE}/${id}/dispatch`, {}),
