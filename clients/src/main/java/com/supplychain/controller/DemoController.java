@@ -10,6 +10,8 @@ import com.supplychain.service.MedicineService;
 import com.supplychain.service.OrganizationService;
 import com.supplychain.service.TransferRequestService;
 import org.springframework.http.ResponseEntity;
+import com.supplychain.repository.ColdChainRecordRepository;
+import com.supplychain.repository.TransferRequestRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,20 +24,26 @@ import java.util.*;
 @RequestMapping("/api/demo")
 public class DemoController {
 
-    private final MedicineService         medicineService;
-    private final OrganizationService     orgService;
-    private final TransferRequestService  transferRequestService;
-    private final DistributorOrderService orderService;
+    private final MedicineService             medicineService;
+    private final OrganizationService         orgService;
+    private final TransferRequestService      transferRequestService;
+    private final DistributorOrderService     orderService;
+    private final ColdChainRecordRepository   coldChainRepo;
+    private final TransferRequestRepository   transferRepo;
 
     public DemoController(MedicineService medicineService,
                            OrganizationService orgService,
                            TransferRequestService transferRequestService,
                            ColdChainService coldChainService,
-                           DistributorOrderService orderService) {
+                           DistributorOrderService orderService,
+                           ColdChainRecordRepository coldChainRepo,
+                           TransferRequestRepository transferRepo) {
         this.medicineService        = medicineService;
         this.orgService             = orgService;
         this.transferRequestService = transferRequestService;
         this.orderService           = orderService;
+        this.coldChainRepo          = coldChainRepo;
+        this.transferRepo           = transferRepo;
     }
 
     @PostMapping("/seed")
@@ -207,5 +215,28 @@ public class DemoController {
             } catch (Exception ignored) {}
         }
         return count;
+    }
+
+    /**
+     * Clears ALL inventory, transfer, and cold-chain data from H2.
+     * Organizations and users are preserved.
+     * ADMIN only.
+     */
+    @PostMapping("/clear")
+    public ResponseEntity<?> clearAllData(HttpSession session) {
+        String role = (String) session.getAttribute("role");
+        if (!"ADMIN".equals(role))
+            return ResponseEntity.status(403).body(Map.of("error", "Yalnızca Admin veri temizleyebilir."));
+        try {
+            coldChainRepo.deleteAll();
+            transferRepo.deleteAll();
+            medicineService.clearAllInventoryData();
+            return ResponseEntity.ok(Map.of(
+                "message", "Tüm envanter, transfer ve soğuk zincir verileri temizlendi. Kuruluşlar ve kullanıcılar korundu.",
+                "cleared", true
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 }

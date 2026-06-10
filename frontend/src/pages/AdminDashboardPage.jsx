@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import StatCard from '../components/StatCard'
 import MedicineTable from '../components/MedicineTable'
 import { medicineService } from '../services/medicineService'
@@ -10,6 +9,7 @@ export default function AdminDashboardPage() {
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
   const [seeding, setSeeding]   = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [seedMsg, setSeedMsg]   = useState('')
   const navigate = useNavigate()
 
@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
   }, [])
 
   async function handleSeedDemo() {
-    if (!window.confirm('Demo verisi oluşturulacak: 3 parti × 5 adet ilaç. Devam edilsin mi?')) return
+    if (!window.confirm('Demo verisi oluşturulacak. Devam edilsin mi?')) return
     setSeeding(true); setSeedMsg('')
     try {
       const res = await api.post('/api/demo/seed', {})
@@ -34,15 +34,23 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (loading) return <div className="spinner" />
+  async function handleClearData() {
+    if (!window.confirm(
+      '⚠ TÜM envanter, transfer ve soğuk zincir verileri silinecek!\n\nKuruluşlar ve kullanıcılar korunur.\n\nDevam edilsin mi?'
+    )) return
+    setClearing(true); setSeedMsg('')
+    try {
+      const res = await api.post('/api/demo/clear', {})
+      setSeedMsg('✓ Tüm veriler temizlendi. Yeni demo verisi oluşturabilirsiniz.')
+      medicineService.getDashboard().then(setData).catch(() => {})
+    } catch (e) {
+      setSeedMsg('Hata: ' + e.message)
+    } finally {
+      setClearing(false)
+    }
+  }
 
-  const chartData = [
-    { name: 'Üretildi',        value: data?.createdCount        || 0, fill: '#2980b9' },
-    { name: 'Dağıtımda',       value: data?.inDistributionCount || 0, fill: '#f39c12' },
-    { name: 'Eczanede',        value: data?.atPharmacyCount     || 0, fill: '#8e44ad' },
-    { name: 'Teslim',          value: data?.dispensedCount      || 0, fill: '#27ae60' },
-    { name: 'Geri Çağırıldı',  value: data?.recalledCount       || 0, fill: '#e74c3c' },
-  ]
+  if (loading) return <div className="spinner" />
 
   return (
     <div>
@@ -50,8 +58,15 @@ export default function AdminDashboardPage() {
         <h1>Yönetici Gösterge Paneli</h1>
         <p>Farmasötik tedarik zincirinin sistem geneli özeti</p>
         <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="btn btn-outline btn-sm" onClick={handleSeedDemo} disabled={seeding}>
+          <button className="btn btn-outline btn-sm" onClick={handleSeedDemo} disabled={seeding || clearing}>
             {seeding ? '⏳ Oluşturuluyor…' : '🧪 Demo Veri Oluştur'}
+          </button>
+          <button
+            className="btn btn-sm"
+            style={{ background: '#e74c3c', color: '#fff', border: 'none' }}
+            onClick={handleClearData}
+            disabled={seeding || clearing}>
+            {clearing ? '⏳ Temizleniyor…' : '🗑 Tüm Verileri Temizle'}
           </button>
           {seedMsg && <span style={{ fontSize: '0.82rem', color: seedMsg.startsWith('✓') ? '#0a3622' : '#842029' }}>{seedMsg}</span>}
         </div>
@@ -86,24 +101,6 @@ export default function AdminDashboardPage() {
             onClick={() => navigate('/medicines')}>Görüntüle</button>
         </div>
       )}
-
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div className="card-header">
-          <div className="card-title">İlaç Yaşam Döngüsü</div>
-        </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
 
       <div className="quick-actions">
         <div className="action-card" onClick={() => navigate('/admin/organizations')}>

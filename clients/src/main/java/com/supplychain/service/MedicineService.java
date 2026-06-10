@@ -278,6 +278,28 @@ public class MedicineService {
 
     public MedicineBatch saveBatch(MedicineBatch batch) { return batchRepo.save(batch); }
 
+    /**
+     * Sets H2 quantity to 0 for ALL batches with this batchNumber across all orgs.
+     * Called after a Corda recall to keep H2 inventory in sync.
+     */
+    public void recallBatchInH2(String batchNumber) {
+        batchRepo.findByBatchNumber(batchNumber).forEach(b -> {
+            b.setQuantity(0);
+            b.setLockedQuantity(0);
+            b.setColdChainViolated(false);
+            batchRepo.save(b);
+        });
+    }
+
+    /**
+     * Deletes ALL batch, transfer, cold-chain, and event data from H2.
+     * Keeps organizations and users intact.
+     */
+    public void clearAllInventoryData() {
+        batchRepo.deleteAll();
+        eventRepo.deleteAll();
+    }
+
     public List<MedicineBatch> getBatchesByOrg(String orgId) {
         return batchRepo.findByOrganizationId(orgId);
     }
@@ -332,12 +354,19 @@ public class MedicineService {
     public void confirmOwnershipTransfer(String fromOrgId, String toOrgId,
                                           String batchNumber, int quantity, String refNo) {
 
-        // ── Sender: reduce quantity ───────────────────────────────────────────
-        MedicineBatch senderBatch = batchRepo
-                .findByOrganizationIdAndBatchNumber(fromOrgId, batchNumber)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Gönderici parti bulunamadı — orgId: " + fromOrgId + ", batch: " + batchNumber));
+        // ── Sender: find ALL batches for this org+batchNumber (handles duplicates) ──
+        List<MedicineBatch> senderBatches = batchRepo.findByOrganizationId(fromOrgId).stream()
+                .filter(b -> batchNumber.equals(b.getBatchNumber()) && b.getQuantity() > 0)
+                .sorted((a, b) -> Integer.compare(b.getQuantity(), a.getQuantity())) // biggest first
+                .collect(java.util.stream.Collectors.toList());
 
+        if (senderBatches.isEmpty()) {
+            throw new IllegalStateException(
+                    "Gönderici parti bulunamadı — orgId: " + fromOrgId + ", batch: " + batchNumber);
+        }
+
+        // Deduct from the batch with most stock
+        MedicineBatch senderBatch = senderBatches.get(0);
         int afterQty = senderBatch.getQuantity() - quantity;
         if (afterQty < 0) {
             throw new IllegalStateException(
@@ -347,16 +376,16 @@ public class MedicineService {
         senderBatch.setQuantity(afterQty);
         batchRepo.save(senderBatch);
 
-        // ── Receiver: add to existing batch or create new one ─────────────────
-        java.util.Optional<MedicineBatch> receiverOpt =
-                batchRepo.findByOrganizationIdAndBatchNumber(toOrgId, batchNumber);
+        // ── Receiver: find existing batch or create new one ───────────────────
+        List<MedicineBatch> receiverBatches = batchRepo.findByOrganizationId(toOrgId).stream()
+                .filter(b -> batchNumber.equals(b.getBatchNumber()))
+                .collect(java.util.stream.Collectors.toList());
 
-        if (receiverOpt.isPresent()) {
-            MedicineBatch rb = receiverOpt.get();
+        if (!receiverBatches.isEmpty()) {
+            MedicineBatch rb = receiverBatches.get(0);
             rb.setQuantity(rb.getQuantity() + quantity);
             batchRepo.save(rb);
         } else {
-            // Copy metadata from sender batch (it's already loaded)
             MedicineBatch nb = new MedicineBatch(
                 "TRF-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                 senderBatch.getMedicineName(),

@@ -9,4 +9,5 @@ public interface MedicineBatchRepository extends JpaRepository<MedicineBatch, St
     List<MedicineBatch> findByOrganizationId(String organizationId);
     java.util.Optional<MedicineBatch> findByOrganizationIdAndBatchNumber(String organizationId, String batchNumber);
     List<MedicineBatch> findByOrganizationIdAndQuantityGreaterThan(String organizationId, int quantity);
+    List<MedicineBatch> findByBatchNumber(String batchNumber);
 }
